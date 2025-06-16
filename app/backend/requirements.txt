@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
+openai
+openai-agents
+supabase
+pypdf

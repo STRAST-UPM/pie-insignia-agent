@@ -1,0 +1,60 @@
+# ===================================================================
+# REGLAS GENERALES Y DE ENTORNO
+# ===================================================================
+
+.venv/
+.env
+.env.*
+!*.env.example
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+.vscode/
+.idea/
+
+.DS_Store
+Thumbs.db
+
+*.tmp
+*.swp
+*.swo
+
+# ===================================================================
+# REGLAS PARA EL PROYECTO 'app'
+# ===================================================================
+
+app/node_modules/
+app/frontend/node_modules/
+
+app/dist/
+app/build/
+
+app/.vite/
+
+app/*.tsbuildinfo
+
+app/.vscode/
+app/.env
+app/backend/.venv/
+app/backend/__pycache__/
+app/backend/*.pyc
+
+app/*.css.map
+
+app/INSIGNIA_API_key.txt
+
+# ===================================================================
+# REGLAS PARA EL PROYECTO 'manage-vector-store'
+# ===================================================================
+
+manage-vector-store/.vscode/
+manage-vector-store/env/
+manage-vector-store/.env
+manage-vector-store/__pycache__/
+
+manage-vector-store/files/
+
+manage-vector-store/isst_tutor_app.py

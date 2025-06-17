@@ -5,6 +5,7 @@ import { User, Bot, Sun, Moon, Paperclip } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import ChatInput from '../components/ChatInput';
 import Button from '../components/ui/Button';
+import { supabase } from '../supabaseClient'; // Import supabase client
 
 const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -25,6 +26,18 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error.message);
+      setError('Failed to sign out. Please try again.'); // Optionally display error to user
+    } else {
+      // App.tsx will handle redirecting to login page due to onAuthStateChange
+      setMessages([]); // Clear messages on sign out
+      setCurrentSessionId(null); // Clear session ID
+    }
+  };
 
   const handleSendMessage = async (text: string, files?: File[]) => {
     if ((!text || !text.trim()) && (!files || files.length === 0)) return;
@@ -125,13 +138,18 @@ const ChatPage: React.FC = () => {
             <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Session: {currentSessionId}</p>
           )}
         </div>
-        <Button
-          onClick={toggleTheme}
-          variant='ghost'
-          size='sm'
-          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-          icon={theme === 'dark' ? <Sun /> : <Moon />}
-        />
+        <div className='flex items-center space-x-2'>
+          <Button
+            onClick={toggleTheme}
+            variant='ghost'
+            size='sm'
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            icon={theme === 'dark' ? <Sun /> : <Moon />}
+          />
+          <Button onClick={handleSignOut} variant='outline' size='sm' aria-label='Sign Out'>
+            Sign Out
+          </Button>
+        </div>
       </header>
 
       <div className='flex-grow overflow-y-auto mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md space-y-4'>

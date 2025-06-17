@@ -102,3 +102,33 @@ pre {
 pre code {
   @apply text-sm block;
 }
+
+/* Styles for light theme on Auth page */
+.auth-container-light {
+  background-color: #ffffff !important; /* Force white background */
+  color: #000000 !important; /* Force black text */
+}
+
+/* Target specific elements within the Supabase Auth UI if the above is not enough */
+.auth-container-light label,
+.auth-container-light input,
+.auth-container-light button,
+.auth-container-light a,
+.auth-container-light div {
+  /* Resetting to allow ThemeSupa to take over or forcing light mode */
+  /* background-color: transparent !important; */ /* Commented out as ThemeSupa should handle this */
+  /* color: #000000 !important; */ /* Commented out as ThemeSupa should handle this */
+}
+
+/* Ensure Supabase's own theme variables are respected or overridden for light mode */
+.auth-container-light {
+  --colors-inputLabelText: #333333 !important;
+  --colors-inputText: #000000 !important;
+  --colors-inputBorder: #cccccc !important;
+  --colors-inputBackground: #ffffff !important;
+  --colors-buttonText: #ffffff !important;
+  --colors-buttonBackground: #28a745 !important; /* Example: Green button */
+  --colors-buttonBackgroundHover: #218838 !important;
+  --colors-anchorText: #007bff !important;
+  --colors-anchorTextHover: #0056b3 !important;
+}

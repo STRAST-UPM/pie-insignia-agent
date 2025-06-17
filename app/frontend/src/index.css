@@ -132,3 +132,34 @@ pre code {
   --colors-anchorText: #007bff !important;
   --colors-anchorTextHover: #0056b3 !important;
 }
+
+html {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.center-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+a {
+  font-weight: 500;
+}
+
+.auth-container-light button:hover {
+  background-color: #e0e0e0; /* Slightly darker on hover */
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}

@@ -25,7 +25,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-resize textarea as content grows
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -34,32 +33,29 @@ const ChatInput: React.FC<ChatInputProps> = ({
   }, [message]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      const newFiles = Array.from(event.target.files);
-      const currentFiles = [...selectedFiles];
-      const currentPreviews = [...filePreviews];
+    if (!event.target.files) return;
 
-      newFiles.forEach((file) => {
-        // Prevent adding duplicate files by name (simple check)
-        if (!currentFiles.some((f) => f.name === file.name)) {
-          currentFiles.push(file);
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            currentPreviews.push({
-              name: file.name,
-              url: reader.result as string,
-              type: file.type,
-            });
-            setFilePreviews([...currentPreviews]); // Update previews
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-      setSelectedFiles(currentFiles);
-      // Clear the input value to allow selecting the same file again if removed and re-added
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    const newFiles = Array.from(event.target.files).filter(
+      (file) => !selectedFiles.some((selectedFile) => selectedFile.name === file.name)
+    );
+
+    if (newFiles.length === 0) return;
+
+    setSelectedFiles((prevFiles) => [...prevFiles, ...newFiles]);
+
+    newFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFilePreviews((prevPreviews) => [
+          ...prevPreviews,
+          { name: file.name, url: reader.result as string, type: file.type },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -68,47 +64,44 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   const removeFile = (fileNameToRemove: string) => {
-    // Renamed from clearImage and updated to remove a specific file
     setSelectedFiles((prevFiles) => prevFiles.filter((file) => file.name !== fileNameToRemove));
     setFilePreviews((prevPreviews) => prevPreviews.filter((preview) => preview.name !== fileNameToRemove));
   };
 
-  const handleSendMessageInternal = () => {
-    if (!message.trim() && selectedFiles.length === 0) return;
+  const handleSendMessage = () => {
+    const trimmedMessage = message.trim();
+    if ((!trimmedMessage && selectedFiles.length === 0) || isProcessing) return;
 
-    onSendMessage(message, selectedFiles.length > 0 ? selectedFiles : undefined);
+    onSendMessage(trimmedMessage, selectedFiles);
     setMessage('');
     setSelectedFiles([]);
     setFilePreviews([]);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedMessage = message.trim();
-    if ((trimmedMessage || selectedFiles.length > 0) && !isProcessing) {
-      handleSendMessageInternal();
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
-    }
+    handleSendMessage();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      handleSendMessage();
     }
   };
 
   return (
     <form
       onSubmit={handleSubmit}
-      className='relative bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 transition-all duration-200'
+      className='relative bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4'
     >
       {filePreviews.length > 0 && (
-        <div className='mb-2 p-2 border border-gray-300 dark:border-gray-600 rounded-lg max-w-full mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2'>
-          {filePreviews.map((file, index) => (
-            <div key={index} className='p-2 border dark:border-gray-500 rounded-md flex flex-col items-center'>
+        <div className='mb-2 p-2 border border-gray-300 dark:border-gray-600 rounded-lg grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2'>
+          {filePreviews.map((file) => (
+            <div key={file.name} className='p-2 border dark:border-gray-500 rounded-md flex flex-col items-center'>
               {file.type.startsWith('image/') ? (
                 <img src={file.url} alt={file.name} className='max-h-24 max-w-full rounded-md mb-1 object-contain' />
               ) : (
@@ -121,29 +114,29 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 onClick={() => removeFile(file.name)}
                 variant='ghost'
                 size='sm'
-                className='mt-1 text-red-500 w-full text-xs'
+                className='mt-1 text-red-500 hover:text-red-700 w-full text-xs'
               >
-                Remove File
+                Remove
               </Button>
             </div>
           ))}
         </div>
       )}
-      <div className='flex items-center gap-2 max-w-4xl mx-auto'>
+      <div className='flex items-center gap-2'>
         <Button
           type='button'
           onClick={triggerFileInput}
           variant='primary'
-          className='h-12 w-12 p-3 rounded-full flex-shrink-0'
-          aria-label='Attach files' // Updated aria-label
+          size='sm'
+          aria-label='Attach files'
           disabled={isProcessing}
-          icon={<Paperclip size={18} />}
+          icon={<Paperclip size={20} />}
         />
         <input
           type='file'
           accept='image/*,application/pdf'
-          multiple // Added multiple attribute
-          onChange={handleFileChange} // Renamed handler
+          multiple
+          onChange={handleFileChange}
           ref={fileInputRef}
           style={{ display: 'none' }}
           disabled={isProcessing}
@@ -156,16 +149,16 @@ const ChatInput: React.FC<ChatInputProps> = ({
           placeholder={placeholder}
           disabled={isProcessing}
           rows={1}
-          className='flex-grow h-12 p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none overflow-hidden transition-all duration-200' // Ajustar altura uniforme
+          className='flex-grow p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none overflow-y-auto transition-all duration-200 hide-scrollbar'
         />
         <Button
           type='submit'
-          disabled={(!message.trim() && selectedFiles.length === 0) || isProcessing} // Updated condition
+          disabled={(!message.trim() && selectedFiles.length === 0) || isProcessing}
           isLoading={isProcessing}
           variant='primary'
-          className='h-12 w-12 p-3 rounded-full flex-shrink-0' // Ajustar tamaño uniforme
+          size='sm'
           aria-label='Send message'
-          icon={<Send size={18} />} // Restaurar el ícono explícito
+          icon={<Send size={20} />}
         />
       </div>
     </form>

@@ -1,43 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Message, Attachment } from '../types';
 import { generateId } from '../utils/helpers';
-import { User, Bot, Sun, Moon, Paperclip, LogOut } from 'lucide-react'; // Added LogOut icon
+import { User, Bot, Sun, Moon, Paperclip, LogOut } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import ChatInput from '../components/ChatInput';
 import Button from '../components/ui/Button';
 import { supabase } from '../supabaseClient';
-import { Session } from '@supabase/supabase-js'; // Import Session type
+import { Session } from '@supabase/supabase-js';
 
 interface ChatPageProps {
-  session: Session; // Define props for ChatPage
+  session: Session;
 }
 
 const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
-  // Destructure session from props
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
+  const currentSessionIdRef = useRef<string>(generateId());
 
-  // Generate session ID on component mount
   useEffect(() => {
-    const newSessionId = generateId();
-    setCurrentSessionId(newSessionId);
-    console.log('Chat session started with ID:', newSessionId);
-
-    // Set user display name from session
     if (session?.user) {
-      const user = session.user;
-      // Prefer user_metadata.name, then email, then a generic name
+      const { user } = session;
       const name = user.user_metadata?.name || user.email || 'User';
       setUserDisplayName(name);
     }
-  }, [session]); // Add session as a dependency
+  }, [session]);
 
-  // Scroll to bottom effect
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -49,31 +40,24 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
       setError('Failed to sign out. Please try again.');
     } else {
       setMessages([]);
-      setCurrentSessionId(null);
-      setUserDisplayName(null); // Clear display name on sign out
+      setUserDisplayName(null);
+      currentSessionIdRef.current = generateId();
     }
   };
 
   const handleSendMessage = async (text: string, files?: File[]) => {
-    if ((!text || !text.trim()) && (!files || files.length === 0)) return;
-    if (!currentSessionId) return;
+    const trimmedText = text.trim();
+    if (!trimmedText && (!files || files.length === 0)) return;
 
-    const userMessageContent = text.trim();
-    const tempAttachments: Attachment[] = [];
-
-    if (files && files.length > 0) {
-      files.forEach((file) => {
-        tempAttachments.push({
-          name: file.name,
-          url: URL.createObjectURL(file),
-          type: file.type,
-        });
-      });
-    }
+    const tempAttachments: Attachment[] = (files || []).map((file) => ({
+      name: file.name,
+      url: URL.createObjectURL(file),
+      type: file.type,
+    }));
 
     const userMessage: Message = {
       id: generateId(),
-      content: userMessageContent,
+      content: trimmedText,
       type: 'user',
       timestamp: new Date(),
       attachments: tempAttachments.length > 0 ? tempAttachments : undefined,
@@ -83,9 +67,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
     setError(null);
 
     const formData = new FormData();
-    formData.append('pregunta', userMessageContent);
-    formData.append('session_id', currentSessionId);
-    if (files && files.length > 0) {
+    formData.append('pregunta', trimmedText);
+    formData.append('session_id', currentSessionIdRef.current);
+    if (files) {
       files.forEach((file) => {
         formData.append('files', file, file.name);
       });
@@ -98,15 +82,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
       });
 
       if (!response.ok) {
-        let errorDetailMessage = `Error: ${response.status} ${response.statusText || ''}`.trim();
-        try {
-          const errorData = await response.json();
-          errorDetailMessage = errorData.detail || errorDetailMessage;
-        } catch (jsonParseError) {
-          // If parsing JSON fails, the original status text is already part of errorDetailMessage
-          // console.error("Failed to parse error response JSON:", jsonParseError);
-        }
-        throw new Error(errorDetailMessage);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.detail || `Error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -121,9 +98,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
         },
       ]);
 
-      if (data.session_id && data.session_id !== currentSessionId) {
-        setCurrentSessionId(data.session_id);
-        console.log('Session ID updated by backend to:', data.session_id);
+      if (data.session_id && data.session_id !== currentSessionIdRef.current) {
+        currentSessionIdRef.current = data.session_id;
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.';
@@ -139,7 +115,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
       ]);
     } finally {
       setIsLoading(false);
-      // Revoke object URLs for all temporary attachments
       tempAttachments.forEach((attachment) => URL.revokeObjectURL(attachment.url));
     }
   };
@@ -148,22 +123,16 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
     <div className='flex flex-col h-screen max-w-3xl mx-auto p-4 bg-gray-50 dark:bg-gray-900 transition-colors duration-200'>
       <header className='mb-6 flex items-center justify-between'>
         <div className='text-left'>
-          {' '}
-          {/* Align title and user info to the left */}
           <h1 className='text-4xl font-bold text-blue-600 dark:text-blue-400'>ISST AI Tutor</h1>
           {userDisplayName && (
             <p className='text-sm text-gray-600 dark:text-gray-400 mt-1'>Logged in as: {userDisplayName}</p>
           )}
-          {currentSessionId &&
-            !userDisplayName && ( // Show session ID only if user name is not available
-              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Session: {currentSessionId}</p>
-            )}
         </div>
         <div className='flex items-center space-x-2'>
           <Button
             onClick={toggleTheme}
             variant='ghost'
-            size='icon' // Changed to icon for a smaller button if only icon is present
+            size='sm'
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             icon={theme === 'dark' ? <Sun /> : <Moon />}
           />
@@ -197,58 +166,44 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
                 <span className='text-xs font-semibold'>
                   {msg.type === 'user' ? userDisplayName || 'You' : 'Assistant'}
                 </span>
-                <span className='text-xs opacity-70 ml-2'>
-                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+                <span className='text-xs opacity-70 ml-2'>{new Date(msg.timestamp).toLocaleTimeString()}</span>
               </div>
-              {msg.content && <p className='text-sm whitespace-pre-wrap'>{msg.content}</p>}
+              <p className='text-sm'>{msg.content}</p>
               {msg.attachments && msg.attachments.length > 0 && (
-                <div className='mt-2 grid grid-cols-1 gap-2'>
-                  {msg.attachments.map((attachment, index) => (
-                    <div key={index} className='p-2 border dark:border-gray-600 rounded-md'>
-                      {attachment.type.startsWith('image/') ? (
-                        <img
-                          src={attachment.url}
-                          alt={attachment.name}
-                          className='max-w-full h-auto rounded-md max-h-60 object-contain'
-                        />
-                      ) : (
-                        <div className='flex items-center p-2 bg-gray-100 dark:bg-gray-700 rounded-md'>
-                          <Paperclip size={20} className='mr-2 flex-shrink-0' />
-                          <span className='text-sm truncate'>
-                            {attachment.name} ({attachment.type})
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                <div className='mt-2'>
+                  {msg.attachments.map((attachment) => (
+                    <a
+                      key={attachment.name}
+                      href={attachment.url}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='text-sm text-blue-200 hover:underline'
+                    >
+                      <Paperclip className='inline-block w-4 h-4 mr-1' />
+                      {attachment.name}
+                    </a>
                   ))}
                 </div>
               )}
             </div>
           </div>
         ))}
-        <div ref={messagesEndRef} /> {/* For auto-scrolling */}
+        {isLoading && (
+          <div className='flex justify-start'>
+            <div className='p-3 rounded-xl bg-gray-200 dark:bg-gray-700'>
+              <p className='text-sm text-gray-600 dark:text-gray-300'>Assistant is thinking...</p>
+            </div>
+          </div>
+        )}
+        {error && (
+          <div className='flex justify-center'>
+            <p className='text-sm text-red-500'>{error}</p>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
-      {error && (
-        <div className='mb-2 p-3 bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-200 rounded-lg text-sm'>
-          {error}
-        </div>
-      )}
-
-      {/* Usar el componente ChatInput aquí */}
-      <ChatInput
-        onSendMessage={handleSendMessage}
-        isProcessing={isLoading || !currentSessionId}
-        placeholder={currentSessionId ? 'Escribe tu pregunta o adjunta archivos...' : 'Inicializando sesión...'}
-      />
-
-      {/* El siguiente bloque <form> fue reemplazado por ChatInput y debe ser eliminado si aún existe. */}
-      {/* Este bloque fue eliminado para evitar duplicados. */}
-
-      {!currentSessionId && (
-        <p className='text-xs text-center text-gray-400 dark:text-gray-600 mt-1'>Initializing session...</p>
-      )}
+      <ChatInput onSendMessage={handleSendMessage} isProcessing={isLoading} />
     </div>
   );
 };

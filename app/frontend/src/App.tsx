@@ -12,25 +12,28 @@ const App = () => {
   const [loading, setLoading] = useState(true); // Add loading state
 
   useEffect(() => {
+    setLoading(true);
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setLoading(false); // Set loading to false after session is fetched
+      setLoading(false);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      setLoading(false); // Also set loading to false on auth state change
+      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Show a loading indicator while session is being determined
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div className='center-container'>
         <p>Loading...</p>
       </div>
     );
@@ -39,10 +42,7 @@ const App = () => {
   if (!session) {
     return (
       // Add a conditional class for light theme when Auth is visible
-      <div
-        className='auth-container-light'
-        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
-      >
+      <div className='auth-container-light center-container'>
         <div style={{ width: '320px' }}>
           <Auth
             supabaseClient={supabase}

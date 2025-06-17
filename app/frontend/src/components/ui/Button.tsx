@@ -45,8 +45,6 @@ const Button: React.FC<ButtonProps> = ({
   const renderSpinner = () => (
     <svg
       className='animate-spin h-4 w-4 text-current'
-      // Adjust margins if it's replacing an icon or standalone
-      style={{ marginRight: children ? '0.5rem' : '0' }}
       xmlns='http://www.w3.org/2000/svg'
       fill='none'
       viewBox='0 0 24 24'
@@ -67,28 +65,15 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const renderTrailingIcon = () => {
-    if (isLoading && iconPosition === 'right') return renderSpinner(); // Spinner can also be trailing
+    if (isLoading && iconPosition === 'right') return renderSpinner();
     if (!isLoading && icon && iconPosition === 'right') return <span className={children ? 'ml-2' : ''}>{icon}</span>;
-    // Eliminar el ícono predeterminado por completo
     return null;
   };
-
-  // Special case for icon-only button that is loading
-  if (isLoading && !children && icon) {
-    return (
-      <button className={buttonClasses} disabled={true} {...props}>
-        {renderSpinner()}
-      </button>
-    );
-  }
 
   return (
     <button className={buttonClasses} disabled={isLoading || props.disabled} {...props}>
       {renderLeadingIcon()}
-      {
-        !isLoading &&
-          children /* Render children only if not loading, or if loading spinner is not meant to replace children entirely. */
-      }
+      {!isLoading && children}
       {renderTrailingIcon()}
     </button>
   );

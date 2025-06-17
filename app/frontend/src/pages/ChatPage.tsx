@@ -1,26 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Message, Attachment } from '../types';
 import { generateId } from '../utils/helpers';
-import { User, Bot, Sun, Moon, Paperclip } from 'lucide-react';
+import { User, Bot, Sun, Moon, Paperclip, LogOut } from 'lucide-react'; // Added LogOut icon
 import { useTheme } from '../context/ThemeContext';
 import ChatInput from '../components/ChatInput';
 import Button from '../components/ui/Button';
-import { supabase } from '../supabaseClient'; // Import supabase client
+import { supabase } from '../supabaseClient';
+import { Session } from '@supabase/supabase-js'; // Import Session type
 
-const ChatPage: React.FC = () => {
+interface ChatPageProps {
+  session: Session; // Define props for ChatPage
+}
+
+const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
+  // Destructure session from props
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
+  const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
 
   // Generate session ID on component mount
   useEffect(() => {
     const newSessionId = generateId();
     setCurrentSessionId(newSessionId);
     console.log('Chat session started with ID:', newSessionId);
-  }, []);
+
+    // Set user display name from session
+    if (session?.user) {
+      const user = session.user;
+      // Prefer user_metadata.name, then email, then a generic name
+      const name = user.user_metadata?.name || user.email || 'User';
+      setUserDisplayName(name);
+    }
+  }, [session]); // Add session as a dependency
 
   // Scroll to bottom effect
   useEffect(() => {
@@ -31,11 +46,11 @@ const ChatPage: React.FC = () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error signing out:', error.message);
-      setError('Failed to sign out. Please try again.'); // Optionally display error to user
+      setError('Failed to sign out. Please try again.');
     } else {
-      // App.tsx will handle redirecting to login page due to onAuthStateChange
-      setMessages([]); // Clear messages on sign out
-      setCurrentSessionId(null); // Clear session ID
+      setMessages([]);
+      setCurrentSessionId(null);
+      setUserDisplayName(null); // Clear display name on sign out
     }
   };
 
@@ -131,22 +146,34 @@ const ChatPage: React.FC = () => {
 
   return (
     <div className='flex flex-col h-screen max-w-3xl mx-auto p-4 bg-gray-50 dark:bg-gray-900 transition-colors duration-200'>
-      <header className='mb-6 text-center flex items-center justify-between'>
-        <div>
+      <header className='mb-6 flex items-center justify-between'>
+        <div className='text-left'>
+          {' '}
+          {/* Align title and user info to the left */}
           <h1 className='text-4xl font-bold text-blue-600 dark:text-blue-400'>ISST AI Tutor</h1>
-          {currentSessionId && (
-            <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Session: {currentSessionId}</p>
+          {userDisplayName && (
+            <p className='text-sm text-gray-600 dark:text-gray-400 mt-1'>Logged in as: {userDisplayName}</p>
           )}
+          {currentSessionId &&
+            !userDisplayName && ( // Show session ID only if user name is not available
+              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Session: {currentSessionId}</p>
+            )}
         </div>
         <div className='flex items-center space-x-2'>
           <Button
             onClick={toggleTheme}
             variant='ghost'
-            size='sm'
+            size='icon' // Changed to icon for a smaller button if only icon is present
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             icon={theme === 'dark' ? <Sun /> : <Moon />}
           />
-          <Button onClick={handleSignOut} variant='outline' size='sm' aria-label='Sign Out'>
+          <Button
+            onClick={handleSignOut}
+            variant='outline'
+            size='sm'
+            aria-label='Sign Out'
+            icon={<LogOut className='mr-2 h-4 w-4' />}
+          >
             Sign Out
           </Button>
         </div>
@@ -167,7 +194,9 @@ const ChatPage: React.FC = () => {
             >
               <div className='flex items-center mb-1'>
                 {msg.type === 'user' ? <User className='w-4 h-4 mr-2' /> : <Bot className='w-4 h-4 mr-2' />}
-                <span className='text-xs font-semibold'>{msg.type === 'user' ? 'You' : 'Assistant'}</span>
+                <span className='text-xs font-semibold'>
+                  {msg.type === 'user' ? userDisplayName || 'You' : 'Assistant'}
+                </span>
                 <span className='text-xs opacity-70 ml-2'>
                   {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>

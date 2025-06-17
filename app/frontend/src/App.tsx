@@ -57,7 +57,7 @@ const App = () => {
   // Session exists, render the app within ThemeProvider
   return (
     <ThemeProvider>
-      <ChatPage />
+      <ChatPage session={session} /> {/* Pass session as a prop */}
     </ThemeProvider>
   );
 };

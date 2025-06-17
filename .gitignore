@@ -44,8 +44,6 @@ app/backend/*.pyc
 
 app/*.css.map
 
-app/INSIGNIA_API_key.txt
-
 # ===================================================================
 # REGLAS PARA EL PROYECTO 'manage-vector-store'
 # ===================================================================

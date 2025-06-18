@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 import { MessageType } from '../types';
 import { formatDate } from '../utils/helpers';
 import { User, Bot } from 'lucide-react';
@@ -11,17 +12,6 @@ interface ChatMessageProps {
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ content, type, timestamp, isTyping = false }) => {
-  // Convert markdown-like syntax to HTML
-  const formatMessageContent = (messageContent: string): string =>
-    messageContent
-      .replace(
-        /```([a-z]*)\\n([\\s\\S]*?)\\n```/g,
-        (_match, _lang, code) =>
-          `<pre class=\"bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto my-2 text-sm\"><code>${code}</code></pre>`
-      )
-      .replace(/`([^`]+)`/g, '<code class="bg-gray-100 dark:bg-gray-800 px-1 rounded text-sm">$1</code>')
-      .replace(/\\n/g, '<br>');
-
   return (
     <div className={`flex w-full mb-4 ${type === 'user' ? 'justify-end' : 'justify-start'}`}>
       <div className={`flex max-w-[80%] ${type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -41,7 +31,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ content, type, timestamp, isT
                 : 'bg-white border border-gray-200 dark:bg-gray-700 dark:text-white rounded-bl-none'
             }`}
           >
-            {content && <div dangerouslySetInnerHTML={{ __html: formatMessageContent(content) }} />}
+            {content && (
+              <div className='prose dark:prose-invert max-w-none'>
+                <ReactMarkdown>{content}</ReactMarkdown>
+              </div>
+            )}
 
             {isTyping && (
               <div className='flex space-x-1 mt-1'>

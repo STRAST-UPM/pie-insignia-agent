@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Message, Attachment } from '../types';
 import { generateId } from '../utils/helpers';
-import { User, Bot, Sun, Moon, Paperclip, LogOut } from 'lucide-react';
+import { Sun, Moon, LogOut } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import ChatInput from '../components/ChatInput';
 import Button from '../components/ui/Button';
 import { supabase } from '../supabaseClient';
 import { Session } from '@supabase/supabase-js';
+import ChatMessage from '../components/ChatMessage';
 
 interface ChatPageProps {
   session: Session;
@@ -150,43 +151,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
 
       <div className='flex-grow overflow-y-auto mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md space-y-4'>
         {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex animate-slide-in ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div
-              className={`max-w-[80%] p-3 rounded-xl shadow ${
-                msg.type === 'user'
-                  ? 'bg-blue-500 text-white rounded-br-none'
-                  : 'bg-purple-500 text-white rounded-bl-none dark:bg-purple-600'
-              }`}
-            >
-              <div className='flex items-center mb-1'>
-                {msg.type === 'user' ? <User className='w-4 h-4 mr-2' /> : <Bot className='w-4 h-4 mr-2' />}
-                <span className='text-xs font-semibold'>
-                  {msg.type === 'user' ? userDisplayName || 'You' : 'Assistant'}
-                </span>
-                <span className='text-xs opacity-70 ml-2'>{new Date(msg.timestamp).toLocaleTimeString()}</span>
-              </div>
-              <p className='text-sm'>{msg.content}</p>
-              {msg.attachments && msg.attachments.length > 0 && (
-                <div className='mt-2'>
-                  {msg.attachments.map((attachment) => (
-                    <a
-                      key={attachment.name}
-                      href={attachment.url}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='text-sm text-blue-200 hover:underline'
-                    >
-                      <Paperclip className='inline-block w-4 h-4 mr-1' />
-                      {attachment.name}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <ChatMessage key={msg.id} content={msg.content} type={msg.type} timestamp={msg.timestamp} />
         ))}
         {isLoading && (
           <div className='flex justify-start'>

@@ -19,16 +19,15 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
-  const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
   const currentSessionIdRef = useRef<string>(generateId());
 
+  const userDisplayName = session.user?.user_metadata?.name || session.user?.email || 'User';
+
   useEffect(() => {
-    if (session?.user) {
-      const { user } = session;
-      const name = user.user_metadata?.name || user.email || 'User';
-      setUserDisplayName(name);
-    }
-  }, [session]);
+    // Clear messages when session user changes
+    setMessages([]);
+    currentSessionIdRef.current = generateId();
+  }, [session.user.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,11 +38,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
     if (error) {
       console.error('Error signing out:', error.message);
       setError('Failed to sign out. Please try again.');
-    } else {
-      setMessages([]);
-      setUserDisplayName(null);
-      currentSessionIdRef.current = generateId();
     }
+    // No need to manually clear state here, onAuthStateChange will trigger a re-render
   };
 
   const handleSendMessage = async (text: string, files?: File[]) => {
@@ -63,6 +59,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
       timestamp: new Date(),
       attachments: tempAttachments.length > 0 ? tempAttachments : undefined,
     };
+
+    // Revoke object URLs after some time to allow the browser to render them
+    setTimeout(() => {
+      tempAttachments.forEach((attachment) => URL.revokeObjectURL(attachment.url));
+    }, 10000); // 10 seconds delay
+
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
     setError(null);
@@ -116,7 +118,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
       ]);
     } finally {
       setIsLoading(false);
-      tempAttachments.forEach((attachment) => URL.revokeObjectURL(attachment.url));
     }
   };
 

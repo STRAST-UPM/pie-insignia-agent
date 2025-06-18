@@ -11,7 +11,7 @@ interface ChatMessageProps {
   isTyping?: boolean;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ content, type, timestamp, isTyping = false }) => {
+const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ content, type, timestamp, isTyping = false }) => {
   return (
     <div className={`flex w-full mb-4 ${type === 'user' ? 'justify-end' : 'justify-start'}`}>
       <div className={`flex max-w-[80%] ${type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -57,6 +57,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ content, type, timestamp, isT
       </div>
     </div>
   );
-};
+});
 
 export default ChatMessage;

@@ -92,7 +92,7 @@ search_tool = FileSearchTool(vector_store_ids=[VECTOR_STORE_ID])
 isst_agent = Agent(
     name="ISST Teaching Assistant",
     instructions=system_prompt,
-    model="gpt-4o",
+    model="gpt-4o", # Use o3 for reasoning, gpt-4o for general purpose
     tools=[search_tool]
 )
 

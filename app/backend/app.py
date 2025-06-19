@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException, File, UploadFile, Form
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import asyncio
 import os
@@ -14,6 +15,7 @@ import sys
 from supabase import create_client, Client
 import pypdf # Added for PDF processing
 from typing import List, Dict, Any
+import traceback
 
 # Ensure UTF-8 encoding for logging
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -35,7 +37,15 @@ if not all([SUPABASE_URL, SUPABASE_KEY, VECTOR_STORE_ID]):
 # Initialize Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Load system_prompt from file
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('conversation_logs.log', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 try:
     with open("system_prompt.txt", "r", encoding="utf-8") as file:
         system_prompt = file.read()
@@ -51,9 +61,18 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
-    allow_methods=["POST"],
+    allow_methods=["POST", "GET"],
     allow_headers=["Content-Type"],
 )
+
+# Exception handler for better error responses
+@app.exception_handler(422)
+async def validation_exception_handler(request: Request, exc):
+    logging.error(f"Validation error for {request.method} {request.url}: {exc}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "Validation error. Please check your request format."}
+    )
 
 # In-memory storage for conversation histories - consider a more robust solution for production
 session_histories: Dict[str, List[Dict[str, Any]]] = {}
@@ -98,56 +117,58 @@ class ChatResponse(BaseModel):
 async def chat_endpoint_handler(
     pregunta: str = Form(""),
     session_id: str | None = Form(None),
-    files: List[UploadFile] = File(...)
+    files: List[UploadFile] = File(default=[])
 ):
-    if not pregunta.strip() and not files:
-        raise HTTPException(status_code=400, detail="Question and files cannot both be empty.")
-
-    user_message_content_parts = []
-    processed_files_info = []
-
-    if files:
-        for file_upload in files:
-            file_bytes = await file_upload.read()
-            await file_upload.close()
-
-            mime_type = file_upload.content_type or mimetypes.guess_type(file_upload.filename or "")[0] or "application/octet-stream"
-
-            if mime_type == "application/pdf":
-                try:
-                    pdf_reader = pypdf.PdfReader(io.BytesIO(file_bytes))
-                    pdf_text = "\n".join(page.extract_text() or "" for page in pdf_reader.pages)
-                    user_message_content_parts.append({"type": "input_text", "text": f'Contenido del PDF adjunto (\'{file_upload.filename}\'):\n---BEGIN PDF CONTENT---\n{pdf_text}\n---END PDF CONTENT---'})
-                    processed_files_info.append(f"Adjunto PDF: {file_upload.filename}")
-                except Exception as e:
-                    logging.error(f"Error processing PDF {file_upload.filename}: {e}")
-                    raise HTTPException(status_code=500, detail=f"Error processing PDF: {file_upload.filename}")
-            elif mime_type.startswith("image/"):
-                base64_image = base64.b64encode(file_bytes).decode('utf-8')
-                user_message_content_parts.append({
-                    "type": "input_image",
-                    "image_url": f"data:{mime_type};base64,{base64_image}"
-                })
-                processed_files_info.append(f"Adjunto Imagen: {file_upload.filename}")
-            else:
-                logging.warning(f"Unsupported file type skipped: {file_upload.filename} ({mime_type})")
-
-    if pregunta.strip():
-        user_message_content_parts.insert(0, {"type": "input_text", "text": pregunta})
-
-    if not user_message_content_parts:
-        raise HTTPException(status_code=400, detail="No processable content in request.")
-
-    current_session_id = session_id or str(uuid.uuid4())
-    current_history = session_histories.setdefault(current_session_id, [])
-
-    current_history.append({"role": "user", "content": user_message_content_parts})
-
-    log_content = pregunta
-    if processed_files_info:
-        log_content += f" ({', '.join(processed_files_info)})"
-
     try:
+        logging.info(f"Chat request received - pregunta: '{pregunta}', session_id: {session_id}, files: {len(files) if files else 0}")
+        
+        if not pregunta.strip() and not files:
+            raise HTTPException(status_code=400, detail="Question and files cannot both be empty.")
+
+        user_message_content_parts = []
+        processed_files_info = []
+
+        if files:
+            for file_upload in files:
+                file_bytes = await file_upload.read()
+                await file_upload.close()
+
+                mime_type = file_upload.content_type or mimetypes.guess_type(file_upload.filename or "")[0] or "application/octet-stream"
+
+                if mime_type == "application/pdf":
+                    try:
+                        pdf_reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+                        pdf_text = "\n".join(page.extract_text() or "" for page in pdf_reader.pages)
+                        user_message_content_parts.append({"type": "input_text", "text": f'Contenido del PDF adjunto (\'{file_upload.filename}\'):\n---BEGIN PDF CONTENT---\n{pdf_text}\n---END PDF CONTENT---'})
+                        processed_files_info.append(f"Adjunto PDF: {file_upload.filename}")
+                    except Exception as e:
+                        logging.error(f"Error processing PDF {file_upload.filename}: {e}")
+                        raise HTTPException(status_code=500, detail=f"Error processing PDF: {file_upload.filename}")
+                elif mime_type.startswith("image/"):
+                    base64_image = base64.b64encode(file_bytes).decode('utf-8')
+                    user_message_content_parts.append({
+                        "type": "input_image",
+                        "image_url": f"data:{mime_type};base64,{base64_image}"
+                    })
+                    processed_files_info.append(f"Adjunto Imagen: {file_upload.filename}")
+                else:
+                    logging.warning(f"Unsupported file type skipped: {file_upload.filename} ({mime_type})")
+
+        if pregunta.strip():
+            user_message_content_parts.insert(0, {"type": "input_text", "text": pregunta})
+
+        if not user_message_content_parts:
+            raise HTTPException(status_code=400, detail="No processable content in request.")
+
+        current_session_id = session_id or str(uuid.uuid4())
+        current_history = session_histories.setdefault(current_session_id, [])
+
+        current_history.append({"role": "user", "content": user_message_content_parts})
+
+        log_content = pregunta
+        if processed_files_info:
+            log_content += f" ({', '.join(processed_files_info)})"
+
         await log_to_supabase(current_session_id, "user", log_content)
 
         result = await Runner.run(isst_agent, current_history)
@@ -159,8 +180,11 @@ async def chat_endpoint_handler(
 
         return ChatResponse(respuesta=respuesta_limpia, session_id=current_session_id)
 
+    except HTTPException:
+        # Re-raise HTTP exceptions as they are
+        raise
     except Exception as e:
-        logging.error(f"Error in chat endpoint: {e}")
+        logging.error(f"Unexpected error in chat endpoint: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="An internal error occurred.")
 
 @app.get("/api/health")

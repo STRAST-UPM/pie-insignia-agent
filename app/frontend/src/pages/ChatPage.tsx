@@ -72,7 +72,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
     const formData = new FormData();
     formData.append('pregunta', trimmedText);
     formData.append('session_id', currentSessionIdRef.current);
-    if (files) {
+    if (files && files.length > 0) {
       files.forEach((file) => {
         formData.append('files', file, file.name);
       });

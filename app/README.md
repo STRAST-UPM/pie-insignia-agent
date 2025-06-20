@@ -1,61 +1,90 @@
-# ISST AI Tutoring Assistant - Full Stack Integration
+# ISST AI Tutoring Assistant
 
-This project integrates a Python-based AI tutoring agent (ISST Teaching Assistant) with a modern web frontend.
+A modern full-stack AI tutoring application built with React, FastAPI, and OpenAI's GPT.
 
-## Project Structure
+## 🚀 Quick Start
 
-- **/backend**: Contains the FastAPI Python server that exposes the AI agent via an API.
-- **/frontend**: Contains the React (Vite + TypeScript) frontend application for user interaction.
+### Prerequisites
 
-## Prerequisites
+- **Node.js** (v18+)
+- **Python** (3.9+)
+- **OpenAI API Key**
+- **Supabase Account**
 
-- **Node.js and npm/yarn**: For running the frontend.
-- **Python (3.9+ recommended)**: For running the backend.
-- **OpenAI API Key**: The AI agent is designed to work with OpenAI's services. You'll need an API key.
-
-## Running the System End-to-End
-
-Follow these steps to run the complete application locally:
-
-### 1. Backend Setup & Start
-
-Navigate to the `backend` directory and execute the following commands:
+### Backend Setup
 
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # Or venv\Scripts\activate on Windows
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-# Edit .env with your OPENAI_API_KEY and confirm VECTOR_STORE_ID
-uvicorn app:app --reload --port 8000
+cp .env.example .env
+# Edit .env with your credentials
+python start.py
 ```
 
-The backend should now be running on http://localhost:8000.
-
-### 2. Frontend Setup & Start
-
-Navigate to the `frontend` directory in a new terminal and execute the following commands:
+### Frontend Setup
 
 ```bash
-cd .frontend
+cd frontend
 npm install
+cp .env.example .env
+# Edit .env with your Supabase credentials
 npm run dev
 ```
 
-The frontend should now be running, typically on http://localhost:5173.
+## 📁 Project Structure
 
-### 3. Access the Application
+```
+app/
+├── backend/                # FastAPI Python server
+│   ├── app.py              # Main application
+│   ├── config.py           # Configuration management
+│   ├── utils.py            # Utility functions
+│   ├── system_prompt.txt   # AI system prompt
+│   └── requirements.txt    # Python dependencies
+├── frontend/               # React TypeScript frontend
+│   └── src/                # Source code
+└── supabase/               # Database migrations
+    └── migrations/         # SQL migration files
+```
 
-Open your web browser and go to http://localhost:5173 (or the port shown by Vite). You should see the AI Tutoring Assistant interface and be able to interact with it.
+## 🛠️ Development
 
-#### Key Features & Constraints Adherence
+### Backend Commands
 
-- Backend API: The backend exposes a /api/chat endpoint using FastAPI.
-- Frontend Integration: The React frontend sends POST requests to /api/chat and displays responses.
-- Session Management: Conversation history is maintained per session (identified by a session_id) in the backend's memory.
-- Clean Structure: Frontend and backend are in separate, clearly structured folders.
+```bash
+python start.py              # Start with basic checks
+python start.py --verify     # Start with full verification
+```
 
-#### Important Notes
+### Frontend Commands
 
-- Agent API: The functionality of the AI heavily depends on the agent's correct configuration (e.g., OpenAI API access).
-- Vector Store: The agent uses a VECTOR_STORE_ID. Ensure this ID is valid and accessible by your OpenAI API key.
+```bash
+npm run dev      # Development server
+npm run build    # Production build
+npm run preview  # Preview production build
+```
+
+## 📊 API Reference
+
+### Health Check
+
+```bash
+GET /health
+```
+
+Returns system status and configuration info.
+
+### Chat Endpoint
+
+```bash
+POST /chat
+Content-Type: application/json
+
+{
+  "pregunta": "Your question",
+  "session_id": "optional-session-id",
+  "archivos": []  // Optional file attachments
+}
+```

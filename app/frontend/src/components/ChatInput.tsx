@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Paperclip, Send } from 'lucide-react';
 import Button from './ui/Button';
+import { debounce } from '../utils/helpers';
 
 interface ChatInputProps {
-  onSendMessage: (message: string, files?: File[]) => void; // Changed to accept an array of files
+  onSendMessage: (message: string, files?: File[]) => void;
   isProcessing?: boolean;
   placeholder?: string;
 }
@@ -18,37 +19,47 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Debounced textarea resize for better performance
+  const debouncedResize = useCallback(
+    debounce(() => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      }
+    }, 100),
+    []
+  );
+
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
-    }
-  }, [message]);
+    debouncedResize();
+  }, [message, debouncedResize]);
+  const handleFileChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (!event.target.files) return;
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files) return;
+      const newFiles = Array.from(event.target.files).filter(
+        (file) => !selectedFiles.some((selectedFile) => selectedFile.name === file.name)
+      );
 
-    const newFiles = Array.from(event.target.files).filter(
-      (file) => !selectedFiles.some((selectedFile) => selectedFile.name === file.name)
-    );
+      if (newFiles.length > 0) {
+        setSelectedFiles((prevFiles) => [...prevFiles, ...newFiles]);
+      }
 
-    if (newFiles.length > 0) {
-      setSelectedFiles((prevFiles) => [...prevFiles, ...newFiles]);
-    }
+      // Clear input to allow same file selection again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    [selectedFiles]
+  );
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const triggerFileInput = () => {
+  const triggerFileInput = useCallback(() => {
     fileInputRef.current?.click();
-  };
+  }, []);
 
-  const removeFile = (fileNameToRemove: string) => {
+  const removeFile = useCallback((fileNameToRemove: string) => {
     setSelectedFiles((prevFiles) => prevFiles.filter((file) => file.name !== fileNameToRemove));
-  };
-
+  }, []);
   const handleSendMessage = useCallback(() => {
     const trimmedMessage = message.trim();
     if ((!trimmedMessage && selectedFiles.length === 0) || isProcessing) return;
@@ -56,22 +67,30 @@ const ChatInput: React.FC<ChatInputProps> = ({
     onSendMessage(trimmedMessage, selectedFiles);
     setMessage('');
     setSelectedFiles([]);
+
+    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
   }, [message, selectedFiles, isProcessing, onSendMessage]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleSendMessage();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
       e.preventDefault();
       handleSendMessage();
-    }
-  };
+    },
+    [handleSendMessage]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSendMessage();
+      }
+    },
+    [handleSendMessage]
+  );
 
   return (
     <form
@@ -85,11 +104,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
               key={file.name}
               className='flex items-center bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1 text-sm'
             >
-              <span>{file.name}</span>
+              <span className='truncate max-w-[200px]'>{file.name}</span>
               <button
                 type='button'
                 onClick={() => removeFile(file.name)}
-                className='ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                className='ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors'
+                aria-label={`Remove ${file.name}`}
               >
                 &times;
               </button>
@@ -97,7 +117,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           ))}
         </div>
       )}
-      <div className='flex items-start'>
+      <div className='flex items-start gap-2'>
         <textarea
           ref={textareaRef}
           value={message}
@@ -111,7 +131,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         <Button
           type='button'
           onClick={triggerFileInput}
-          variant='primary'
+          variant='ghost'
           size='sm'
           aria-label='Attach files'
           disabled={isProcessing}
@@ -123,7 +143,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           multiple
           onChange={handleFileChange}
           ref={fileInputRef}
-          style={{ display: 'none' }}
+          className='hidden'
           disabled={isProcessing}
         />
         <Button
@@ -140,4 +160,4 @@ const ChatInput: React.FC<ChatInputProps> = ({
   );
 };
 
-export default ChatInput;
+export default React.memo(ChatInput);

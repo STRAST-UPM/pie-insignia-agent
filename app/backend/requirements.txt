@@ -1,8 +1,9 @@
-fastapi
-uvicorn[standard]
-python-dotenv
-pydantic
-openai
-openai-agents
-supabase
-pypdf
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+python-dotenv>=1.0.0
+pydantic>=2.0.0,<3.0.0
+pydantic-settings>=2.0.0,<3.0.0
+openai>=1.80.0
+openai-agents>=0.0.17
+supabase>=2.0.0
+pypdf>=4.0.0

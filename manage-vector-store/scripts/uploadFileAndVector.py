@@ -3,7 +3,7 @@ client = OpenAI()
 
 # Subir el archivo
 uploaded_file = client.files.create(
-    file=open("files/ISST - Tema 1.1.pdf", "rb"),
+    file=open("../files/ISST - Tema 1.1.pdf", "rb"),
     purpose="assistants"
 )
 file_id = uploaded_file.id  # Use dot notation to access the 'id' attribute

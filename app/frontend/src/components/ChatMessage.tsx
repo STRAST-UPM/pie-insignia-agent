@@ -8,49 +8,40 @@ interface ChatMessageProps {
   content: string;
   type: MessageType;
   timestamp: Date;
-  isTyping?: boolean;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ content, type, timestamp, isTyping = false }) => {
+const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ content, type, timestamp }) => {
+  const isUser = type === 'user';
+
   return (
-    <div className={`flex w-full mb-4 ${type === 'user' ? 'justify-end' : 'justify-start'}`}>
-      <div className={`flex max-w-[80%] ${type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div className={`flex w-full mb-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
+      <div className={`flex max-w-[80%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
         <div
           className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${
-            type === 'user' ? 'bg-blue-100 text-blue-600 ml-2' : 'bg-purple-100 text-purple-600 mr-2'
+            isUser
+              ? 'bg-blue-100 text-blue-600 ml-2 dark:bg-blue-900 dark:text-blue-300'
+              : 'bg-purple-100 text-purple-600 mr-2 dark:bg-purple-900 dark:text-purple-300'
           }`}
         >
-          {type === 'user' ? <User size={16} /> : <Bot size={16} />}
+          {isUser ? <User size={16} /> : <Bot size={16} />}
         </div>
 
         <div>
           <div
-            className={`p-3 rounded-lg shadow-sm ${
-              type === 'user'
-                ? 'bg-blue-600 text-white rounded-br-none'
-                : 'bg-white border border-gray-200 dark:bg-gray-700 dark:text-white rounded-bl-none'
+            className={`p-3 rounded-lg shadow-sm transition-colors ${
+              isUser
+                ? 'bg-blue-600 text-white rounded-br-none dark:bg-blue-500'
+                : 'bg-white border border-gray-200 dark:bg-gray-700 dark:text-white dark:border-gray-600 rounded-bl-none'
             }`}
           >
             {content && (
-              <div className='prose dark:prose-invert max-w-none'>
+              <div className='prose dark:prose-invert max-w-none prose-sm'>
                 <ReactMarkdown>{content}</ReactMarkdown>
-              </div>
-            )}
-
-            {isTyping && (
-              <div className='flex space-x-1 mt-1'>
-                {[0, 150, 300].map((delay) => (
-                  <div
-                    key={delay}
-                    className='w-2 h-2 rounded-full bg-gray-300 animate-bounce'
-                    style={{ animationDelay: `${delay}ms` }}
-                  />
-                ))}
               </div>
             )}
           </div>
 
-          <div className={`text-xs text-gray-500 mt-1 ${type === 'user' ? 'text-right' : 'text-left'}`}>
+          <div className={`text-xs text-gray-500 dark:text-gray-400 mt-1 ${isUser ? 'text-right' : 'text-left'}`}>
             {formatDate(timestamp)}
           </div>
         </div>
@@ -58,5 +49,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ content, type, tim
     </div>
   );
 });
+
+ChatMessage.displayName = 'ChatMessage';
 
 export default ChatMessage;

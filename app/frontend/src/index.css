@@ -2,12 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base styles */
+/* Base styles with performance optimizations */
 @layer base {
-  body {
-    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200;
+  html {
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Performance optimizations */
+    -ms-text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
   }
 
+  body {
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200;
+    /* Optimize repaints */
+    contain: layout style paint;
+  }
+
+  /* Typography optimization */
   h1,
   h2,
   h3,
@@ -15,151 +28,103 @@
   h5,
   h6 {
     @apply font-medium tracking-tight;
+    /* Prevent layout shift */
+    font-display: swap;
   }
 
   h1 {
     @apply text-4xl sm:text-5xl md:text-6xl;
   }
-
   h2 {
     @apply text-3xl sm:text-4xl;
   }
-
   h3 {
     @apply text-2xl sm:text-3xl;
   }
-
   h4 {
     @apply text-xl sm:text-2xl;
   }
+
+  a {
+    @apply font-medium;
+    /* Hardware acceleration for hover effects */
+    transform: translateZ(0);
+  }
 }
 
-/* Component styles */
+/* Optimized component styles */
 @layer components {
   .btn {
     @apply rounded-lg px-4 py-2 font-medium transition-all duration-200;
+    /* Hardware acceleration */
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   .btn-primary {
     @apply bg-blue-600 hover:bg-blue-700 text-white;
   }
-
   .btn-secondary {
     @apply bg-purple-600 hover:bg-purple-700 text-white;
   }
-
   .btn-outline {
     @apply border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800;
   }
 
   .card {
     @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700;
+    /* Optimize shadow rendering */
+    contain: layout style paint;
   }
 
   .input {
     @apply px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200;
   }
-}
 
-/* Animation styles */
-.fade-in {
-  animation: fadeIn 0.5s ease-in-out;
-}
-
-.slide-in {
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+  .center-container {
+    @apply flex justify-center items-center h-screen;
   }
-  to {
-    opacity: 1;
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateY(10px);
-    opacity: 0;
+/* Optimized Auth UI styles */
+@layer components {
+  .auth-container-light {
+    @apply bg-white text-black;
+    --colors-inputLabelText: #333333 !important;
+    --colors-inputText: #000000 !important;
+    --colors-inputBorder: #cccccc !important;
+    --colors-inputBackground: #ffffff !important;
+    --colors-buttonText: #ffffff !important;
+    --colors-buttonBackground: #28a745 !important;
+    --colors-buttonBackgroundHover: #218838 !important;
+    --colors-anchorText: #007bff !important;
+    --colors-anchorTextHover: #0056b3 !important;
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
+
+  .auth-container-light button:hover {
+    @apply bg-gray-200;
   }
 }
 
-/* Code block styling */
-code {
-  @apply font-mono text-sm;
-}
+/* Performance utilities */
+@layer utilities {
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
 
-pre {
-  @apply rounded-lg p-4 my-4 overflow-x-auto;
-}
-
-pre code {
-  @apply text-sm block;
-}
-
-/* Styles for light theme on Auth page */
-.auth-container-light {
-  background-color: #ffffff !important; /* Force white background */
-  color: #000000 !important; /* Force black text */
-}
-
-/* Target specific elements within the Supabase Auth UI if the above is not enough */
-.auth-container-light label,
-.auth-container-light input,
-.auth-container-light button,
-.auth-container-light a,
-.auth-container-light div {
-  /* Resetting to allow ThemeSupa to take over or forcing light mode */
-  /* background-color: transparent !important; */ /* Commented out as ThemeSupa should handle this */
-  /* color: #000000 !important; */ /* Commented out as ThemeSupa should handle this */
-}
-
-/* Ensure Supabase's own theme variables are respected or overridden for light mode */
-.auth-container-light {
-  --colors-inputLabelText: #333333 !important;
-  --colors-inputText: #000000 !important;
-  --colors-inputBorder: #cccccc !important;
-  --colors-inputBackground: #ffffff !important;
-  --colors-buttonText: #ffffff !important;
-  --colors-buttonBackground: #28a745 !important; /* Example: Green button */
-  --colors-buttonBackgroundHover: #218838 !important;
-  --colors-anchorText: #007bff !important;
-  --colors-anchorTextHover: #0056b3 !important;
-}
-
-html {
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-.center-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-
-a {
-  font-weight: 500;
-}
-
-.auth-container-light button:hover {
-  background-color: #e0e0e0; /* Slightly darker on hover */
-}
-
-.hide-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-}
-
-.hide-scrollbar::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  .no-select {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
 }

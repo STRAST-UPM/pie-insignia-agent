@@ -91,24 +91,25 @@ const ChatInput: React.FC<ChatInputProps> = ({
     },
     [handleSendMessage]
   );
-
   return (
     <form
       onSubmit={handleSubmit}
-      className='relative bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4'
+      className='relative glass-effect border-t-2 border-neutral-200 dark:border-dark-200 p-6 rounded-t-2xl'
     >
       {selectedFiles.length > 0 && (
-        <div className='mb-2 flex flex-wrap gap-2'>
+        <div className='mb-4 flex flex-wrap gap-3'>
           {selectedFiles.map((file) => (
             <div
               key={file.name}
-              className='flex items-center bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1 text-sm'
+              className='flex items-center bg-gradient-to-r from-neutral-100 to-neutral-200 dark:from-dark-200 dark:to-dark-100 rounded-xl px-4 py-2 text-sm shadow-soft'
             >
-              <span className='truncate max-w-[200px]'>{file.name}</span>
+              <span className='truncate max-w-[200px] font-medium text-neutral-700 dark:text-dark-700'>
+                {file.name}
+              </span>
               <button
                 type='button'
                 onClick={() => removeFile(file.name)}
-                className='ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors'
+                className='ml-3 text-neutral-500 hover:text-error-500 dark:text-dark-500 dark:hover:text-error-400 transition-colors duration-200 text-lg font-semibold'
                 aria-label={`Remove ${file.name}`}
               >
                 &times;
@@ -116,8 +117,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
             </div>
           ))}
         </div>
-      )}
-      <div className='flex items-start gap-2'>
+      )}{' '}
+      <div className='flex items-end gap-4'>
         <textarea
           ref={textareaRef}
           value={message}
@@ -126,16 +127,17 @@ const ChatInput: React.FC<ChatInputProps> = ({
           placeholder={placeholder}
           disabled={isProcessing}
           rows={1}
-          className='flex-grow p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none overflow-y-auto transition-all duration-200 hide-scrollbar'
+          className='flex-grow p-4 border-2 border-neutral-200 dark:border-dark-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-dark-100 dark:text-dark-900 placeholder-neutral-500 dark:placeholder-dark-500 resize-none overflow-y-auto transition-all duration-300 hide-scrollbar shadow-soft bg-white'
         />
         <Button
           type='button'
           onClick={triggerFileInput}
-          variant='ghost'
+          variant='outline'
           size='sm'
           aria-label='Attach files'
           disabled={isProcessing}
           icon={<Paperclip size={20} />}
+          className='rounded-xl border-2 hover:border-primary-300 hover:bg-primary-50 dark:hover:border-primary-500 dark:hover:bg-primary-950 h-[56px] w-[56px] flex-shrink-0'
         />
         <input
           type='file'
@@ -154,6 +156,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           size='sm'
           aria-label='Send message'
           icon={<Send size={20} />}
+          className='h-[56px] w-[56px] flex-shrink-0'
         />
       </div>
     </form>

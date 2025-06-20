@@ -21,14 +21,20 @@ const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-medium transition-colors rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800';
-  const sizeStyles = { sm: 'px-3 py-1.5 text-sm', md: 'px-4 py-2 text-base', lg: 'px-6 py-3 text-lg' };
+    'inline-flex items-center justify-center font-semibold transition-all duration-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-100 shadow-soft hover:shadow-medium transform hover:-translate-y-0.5';
+  const sizeStyles = {
+    sm: 'px-4 py-2.5 text-sm',
+    md: 'px-6 py-3 text-base',
+    lg: 'px-8 py-4 text-lg',
+  };
   const variantStyles = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm dark:bg-blue-500 dark:hover:bg-blue-600',
-    secondary: 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm dark:bg-purple-500 dark:hover:bg-purple-600',
+    primary:
+      'bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white shadow-lg hover:shadow-xl dark:from-primary-500 dark:to-primary-600 dark:hover:from-primary-600 dark:hover:to-primary-700',
+    secondary:
+      'bg-gradient-to-r from-secondary-600 to-secondary-700 hover:from-secondary-700 hover:to-secondary-800 text-white shadow-lg hover:shadow-xl dark:from-secondary-500 dark:to-secondary-600 dark:hover:from-secondary-600 dark:hover:to-secondary-700',
     outline:
-      'border border-gray-300 bg-transparent hover:bg-gray-50 text-gray-700 dark:border-gray-600 dark:hover:bg-gray-700 dark:text-gray-300',
-    ghost: 'bg-transparent hover:bg-gray-100 text-gray-700 dark:hover:bg-gray-700 dark:text-gray-300',
+      'border-2 border-neutral-200 bg-transparent hover:border-primary-300 hover:bg-primary-50 text-neutral-700 dark:border-dark-200 dark:hover:border-primary-500 dark:hover:bg-primary-950 dark:text-dark-700',
+    ghost: 'bg-transparent hover:bg-neutral-100 text-neutral-700 dark:hover:bg-dark-100 dark:text-dark-700',
   };
 
   const buttonClasses = [

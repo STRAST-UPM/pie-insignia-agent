@@ -22,14 +22,26 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
   const currentSessionIdRef = useRef<string>(generateId());
+  const attachmentUrlsRef = useRef<Set<string>>(new Set());
 
   const userDisplayName = session.user?.user_metadata?.name || session.user?.email || 'User';
 
   // Reset conversation when user changes
   useEffect(() => {
+    // Cleanup old attachment URLs
+    attachmentUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    attachmentUrlsRef.current.clear();
+
     setMessages([]);
     currentSessionIdRef.current = generateId();
   }, [session.user.id]);
+
+  // Cleanup URLs on unmount
+  useEffect(() => {
+    return () => {
+      attachmentUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -39,13 +51,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
   const handleSignOut = useCallback(async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Error signing out:', error.message);
-        setError('Failed to sign out. Please try again.');
-      }
+      if (error) throw error;
     } catch (err) {
-      console.error('Unexpected error during sign out:', err);
-      setError('An unexpected error occurred during sign out.');
+      console.error('Error signing out:', err);
+      setError('Failed to sign out. Please try again.');
     }
   }, []);
 
@@ -54,21 +63,21 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
     formData.append('pregunta', text);
     formData.append('session_id', currentSessionIdRef.current);
 
-    if (files?.length) {
-      files.forEach((file) => {
-        formData.append('files', file, file.name);
-      });
-    }
+    files?.forEach((file) => formData.append('files', file, file.name));
 
     return formData;
   }, []);
 
   const processFiles = useCallback((files: File[]): Attachment[] => {
-    return files.map((file) => ({
-      name: file.name,
-      url: URL.createObjectURL(file),
-      type: file.type,
-    }));
+    return files.map((file) => {
+      const url = URL.createObjectURL(file);
+      attachmentUrlsRef.current.add(url);
+      return {
+        name: file.name,
+        url,
+        type: file.type,
+      };
+    });
   }, []);
 
   const handleSendMessage = useCallback(
@@ -85,13 +94,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
         timestamp: new Date(),
         attachments: tempAttachments,
       };
-
-      // Cleanup object URLs after rendering
-      if (tempAttachments) {
-        setTimeout(() => {
-          tempAttachments.forEach((attachment) => URL.revokeObjectURL(attachment.url));
-        }, 10000);
-      }
 
       setMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
@@ -144,50 +146,61 @@ const ChatPage: React.FC<ChatPageProps> = ({ session }) => {
   );
 
   return (
-    <div className='flex flex-col h-screen max-w-4xl mx-auto p-4 bg-gray-50 dark:bg-gray-900 transition-colors duration-200'>
-      <header className='mb-6 flex items-center justify-between'>
+    <div className='flex flex-col h-screen max-w-5xl mx-auto p-6 gradient-surface transition-colors duration-300'>
+      <header className='mb-8 flex items-center justify-between'>
         <div className='text-left'>
-          <h1 className='text-4xl font-bold text-blue-600 dark:text-blue-400'>ISST AI Tutor</h1>
-          <p className='text-sm text-gray-600 dark:text-gray-400 mt-1'>
-            Logged in as: <span className='font-medium'>{userDisplayName}</span>
+          <h1 className='text-5xl font-bold text-gradient mb-2'>ISST AI Tutor</h1>
+          <p className='text-sm text-neutral-600 dark:text-dark-600 mt-1'>
+            Logged in as:{' '}
+            <span className='font-semibold text-primary-600 dark:text-primary-400'>{userDisplayName}</span>
           </p>
         </div>
-        <div className='flex items-center space-x-2'>
+        <div className='flex items-center space-x-3'>
           <Button
             onClick={toggleTheme}
-            variant='ghost'
+            variant='outline'
             size='sm'
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            icon={theme === 'dark' ? <Sun /> : <Moon />}
+            icon={theme === 'dark' ? <Sun className='h-5 w-5' /> : <Moon className='h-5 w-5' />}
+            className='rounded-xl border-2 hover:border-primary-300 hover:bg-primary-50 dark:hover:border-primary-500 dark:hover:bg-primary-950'
           />
           <Button
             onClick={handleSignOut}
             variant='outline'
             size='sm'
             aria-label='Sign Out'
-            icon={<LogOut className='mr-2 h-4 w-4' />}
+            className='rounded-xl border-2 hover:border-primary-300 hover:bg-primary-50 dark:hover:border-primary-500 dark:hover:bg-primary-950'
           >
+            <LogOut className='mr-2 h-4 w-4' />
             Sign Out
           </Button>
         </div>
       </header>
 
-      <div className='flex-grow overflow-y-auto mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md space-y-4'>
+      <div className='flex-grow overflow-y-auto mb-6 p-6 card-elevated space-y-6 backdrop-blur-sm'>
         {messages.map((msg) => (
-          <ChatMessage key={msg.id} content={msg.content} type={msg.type} timestamp={msg.timestamp} />
+          <ChatMessage
+            key={msg.id}
+            content={msg.content}
+            type={msg.type}
+            timestamp={msg.timestamp}
+            attachments={msg.attachments}
+          />
         ))}
 
         {isLoading && (
           <div className='flex justify-start'>
-            <div className='p-3 rounded-xl bg-gray-200 dark:bg-gray-700'>
-              <p className='text-sm text-gray-600 dark:text-gray-300'>Assistant is thinking...</p>
+            <div className='p-4 rounded-2xl bg-gradient-to-r from-neutral-100 to-neutral-200 dark:from-dark-200 dark:to-dark-100 shadow-soft'>
+              <p className='text-sm text-neutral-600 dark:text-dark-600 font-medium'>Assistant is thinking...</p>
             </div>
           </div>
         )}
 
         {error && (
           <div className='flex justify-center'>
-            <p className='text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg'>{error}</p>
+            <p className='text-sm text-error-600 bg-error-50 dark:bg-error-500/10 px-4 py-3 rounded-xl border border-error-200 dark:border-error-500/20'>
+              {error}
+            </p>
           </div>
         )}
 

@@ -13,5 +13,5 @@ Creates the `chat_logs` table for storing conversation history with:
 ## Setup
 
 1. Create a new Supabase project
-2. Run the migration SQL in the Supabase SQL Editor
+2. Run the migration SQL (./migrations/... .sql script) in the Supabase SQL Editor (on the online dashboard -> SQL Editor)
 3. Configure environment variables in backend and frontend

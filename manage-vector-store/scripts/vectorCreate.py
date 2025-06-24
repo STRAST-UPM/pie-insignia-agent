@@ -1,18 +1,28 @@
+import argparse
 from openai import OpenAI
-client = OpenAI()
 
-vector_store = client.vector_stores.create(
-    name="ISST Materials",
-    file_ids=[
-        "file-7FB2G9CsCtLPsYtnBuzj2i",
-        "file-P4nPUX8T9YeaPQX1ansCMv",
-        "file-NUjuDRmNkXpYTQahwAkHkX",
-        "file-U749ahX7CfwEGG1mujMPTL",
-        "file-Fnx12oRrtTBc6xM8n1b4pA",
-        "file-MTSt5YWAhQxygLAxWpcd9y",
-        "file-CGPgLY7mb5dQtojduFgFwj",
-        "file-4SpV2ot6epvv7gFquS5Ccv",
-        "file-JRxVcaufgWrtUqNuyqQcdu"
-    ]
-)
-print(vector_store)
+def create_vector_store(name: str, file_ids: list):
+    """Creates a vector store with the given name and file IDs."""
+    client = OpenAI()
+    try:
+        vector_store = client.vector_stores.create(
+            name=name,
+            file_ids=file_ids
+        )
+        print(f"Vector store '{name}' created successfully. ID: {vector_store.id}")
+        return vector_store
+    except Exception as e:
+        print(f"Error creating vector store: {e}")
+        return None
+
+def main():
+    """Main function to parse arguments and create a vector store."""
+    parser = argparse.ArgumentParser(description="Create a vector store in OpenAI.")
+    parser.add_argument("name", help="The name of the vector store.")
+    parser.add_argument("file_ids", nargs='+', help="A list of file IDs to include in the vector store.")
+    args = parser.parse_args()
+    
+    create_vector_store(args.name, args.file_ids)
+
+if __name__ == "__main__":
+    main()

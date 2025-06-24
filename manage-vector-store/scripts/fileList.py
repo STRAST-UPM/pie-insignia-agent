@@ -1,10 +1,17 @@
 from openai import OpenAI
-client = OpenAI()
 
-files = list(client.files.list())
-print(files)
+def list_files():
+    """Lists all files from OpenAI."""
+    client = OpenAI()
+    try:
+        files = list(client.files.list())
+        if files:
+            for file in files:
+                print(f"Filename: {file.filename}, ID: {file.id}")
+        else:
+            print("No files found.")
+    except Exception as e:
+        print(f"Error listing files: {e}")
 
-print("-------------------------------------------------------------------------------")
-
-fileIds = [{"filename": file.filename, "id": file.id} for file in client.files.list()]
-print(fileIds)
+if __name__ == "__main__":
+    list_files()

@@ -56,6 +56,8 @@ app/
 ```bash
 python start.py              # Start with basic checks
 python start.py --verify     # Start with full verification
+uvicorn app:app --reload --port 8000 # Run without any checks
+
 ```
 
 ### Frontend Commands

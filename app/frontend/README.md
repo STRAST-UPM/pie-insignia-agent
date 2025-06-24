@@ -46,6 +46,8 @@ Required in `.env`:
 ```env
 VITE_SUPABASE_URL=https://your_project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_anon_key_here
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
 
 ## 🏗️ Build & Deploy
